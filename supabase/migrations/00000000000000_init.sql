@@ -1,0 +1,19 @@
+-- Neoulo Trust — Initial migration placeholder
+-- ─────────────────────────────────────────────
+-- This file establishes the migrations directory.
+--
+-- Next migration: create all tables + RLS policies
+--   - cells
+--   - members
+--   - rins
+--   - contributions
+--   - farms
+--   - crop_cycles
+--   - yield_logs
+--   - expense_logs
+--
+-- See CLAUDE.md for the full schema definition.
+--
+-- Postgres helper functions to be created in next migration:
+--   get_my_role()     → returns the calling user's role from members
+--   get_my_cell_id()  → returns the calling user's cell_id from members
