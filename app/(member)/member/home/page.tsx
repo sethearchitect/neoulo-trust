@@ -1,178 +1,98 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase-server"
+import { MemberHomeView } from "./MemberHomeView"
+import { pct } from "@/lib/utils"
+import type { Cell, RINWithRaised } from "@/types"
 
-import { useState } from "react"
-import { Card } from "@/components/ui/Card"
-import { StatCard } from "@/components/ui/StatCard"
-import { Badge } from "@/components/ui/Badge"
-import { ProgressBar } from "@/components/ui/ProgressBar"
-import { MOCK_MEMBER, MOCK_CELL, MOCK_RIN, TOTAL_YIELD } from "@/lib/mock-data"
-import { fmt, pct } from "@/lib/utils"
+export default async function MemberHomePage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
 
-const RIN_STAGES = [
-  "draft",
-  "open",
-  "funded",
-  "forwarded",
-  "reviewing",
-  "deployed",
-  "yielding",
-  "settled",
-] as const
+  const { data: currentMember } = await supabase
+    .from("members")
+    .select("id, name, cell_id, role, joined")
+    .eq("user_id", user.id)
+    .single()
 
-const myContrib = MOCK_MEMBER.contribution_total ?? 0
-const myShare = pct(myContrib, MOCK_RIN.raised)
-const myYieldShare = Math.round((myContrib / MOCK_RIN.raised) * TOTAL_YIELD)
+  if (!currentMember) redirect("/auth/login")
 
-export default function MemberHomePage() {
-  const [rinExpanded, setRinExpanded] = useState(false)
-  const currentIdx = RIN_STAGES.indexOf(MOCK_RIN.status)
+  const memberId = (currentMember as { id: string }).id
+  const cellId = (currentMember as { cell_id: string }).cell_id
+  const memberName = (currentMember as { name: string }).name
+  const memberJoined = (currentMember as { joined: string | null }).joined
+
+  const [cellResult, rinResult, myContribResult, memberCountResult, raisedResult] = await Promise.all([
+    supabase.from("cells").select("*").eq("id", cellId).single(),
+    supabase.from("rins").select("*").eq("cell_id", cellId).maybeSingle(),
+    supabase.from("contributions").select("amount").eq("member_id", memberId).eq("status", "confirmed"),
+    supabase.from("members").select("*", { count: "exact", head: true }).eq("cell_id", cellId),
+    supabase.rpc("get_cell_raised", { p_cell_id: cellId }),
+  ])
+
+  const cell = cellResult.data as unknown as Cell
+  const rinRaw = rinResult.data as unknown as {
+    id: string; cell_id: string; rin_code: string; target: number; status: string
+    return_rate: number; asset_node: string | null; notes: string | null
+    opened_at: string | null; deployed_at: string | null; expected_return: string | null
+  } | null
+
+  const myContribs = (myContribResult.data ?? []) as unknown as Array<{ amount: number }>
+  const myContrib = myContribs.reduce((s, c) => s + c.amount, 0)
+  const raised = (raisedResult.data as number) ?? 0
+  const memberCount = memberCountResult.count ?? 0
+
+  const rin: RINWithRaised | null = rinRaw
+    ? {
+        id: rinRaw.id,
+        cell_id: rinRaw.cell_id,
+        rin_code: rinRaw.rin_code,
+        target: rinRaw.target,
+        status: rinRaw.status as RINWithRaised["status"],
+        return_rate: rinRaw.return_rate,
+        asset_node: rinRaw.asset_node ?? undefined,
+        notes: rinRaw.notes ?? undefined,
+        opened_at: rinRaw.opened_at ?? undefined,
+        deployed_at: rinRaw.deployed_at ?? undefined,
+        expected_return: rinRaw.expected_return ?? undefined,
+        raised,
+      }
+    : null
+
+  // Fetch yield logs to compute my yield share
+  let totalYield = 0
+  if (rin) {
+    const farmResult = await supabase.from("farms").select("id").eq("cell_id", cellId).maybeSingle()
+    const farmId = (farmResult.data as { id: string } | null)?.id
+    if (farmId) {
+      const cycleResult = await supabase
+        .from("crop_cycles")
+        .select("id")
+        .eq("farm_id", farmId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+      const cycleId = ((cycleResult.data ?? [])[0] as { id: string } | undefined)?.id
+      if (cycleId) {
+        const { data: ylData } = await supabase.from("yield_logs").select("value").eq("cycle_id", cycleId)
+        totalYield = ((ylData ?? []) as unknown as Array<{ value: number }>).reduce((s, y) => s + y.value, 0)
+      }
+    }
+  }
+
+  const myShare = pct(myContrib, raised)
+  const myYieldShare = raised > 0 ? Math.round((myContrib / raised) * totalYield) : 0
 
   return (
-    <div className="fu">
-      {/* Greeting */}
-      <div className="mb-7">
-        <h1 className="font-serif text-[28px] text-[#0D3B20] leading-tight">
-          Welcome, {MOCK_MEMBER.name.split(" ")[0]}
-        </h1>
-        <p className="font-mono text-[12px] text-[#7A7A7A] mt-1">
-          {MOCK_CELL.name} · Member since {MOCK_MEMBER.joined ?? ""}
-        </p>
-      </div>
-
-      {/* Stat row */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard label="My Contribution" value={fmt(myContrib)} sub="3 payments" />
-        <StatCard label="My Share" value={`${myShare}%`} sub="of total raised" accent />
-        <StatCard label="Projected Return" value={fmt(myYieldShare)} sub="yield share" />
-      </div>
-
-      {/* Cell info card */}
-      <Card className="p-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-sans text-[14px] font-semibold text-[#1A1A1A]">{MOCK_CELL.name}</p>
-            <p className="font-sans text-[12px] text-[#7A7A7A] mt-0.5">
-              📍 {MOCK_CELL.location}, {MOCK_CELL.state}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Badge status={MOCK_CELL.status} />
-            <span className="font-mono text-[11px] text-[#7A7A7A]">6 members</span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Expandable RIN card */}
-      <Card
-        className="p-5 mb-6"
-        onClick={() => setRinExpanded(!rinExpanded)}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-[13px] text-[#C9A84C] font-bold">
-            {MOCK_RIN.rin_code}
-          </span>
-          <Badge status={MOCK_RIN.status} />
-        </div>
-        <ProgressBar value={MOCK_RIN.raised} max={MOCK_RIN.target} color="#C9A84C" height={8} />
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-mono text-[11px] text-[#7A7A7A]">
-            {fmt(MOCK_RIN.raised)} raised
-          </span>
-          <span className="font-mono text-[11px] text-[#7A7A7A]">
-            {pct(MOCK_RIN.raised, MOCK_RIN.target)}%
-          </span>
-        </div>
-        <p className="font-mono text-[11px] text-[#7A7A7A] mt-2">
-          {rinExpanded ? "Tap to collapse ▲" : "Tap to expand ▼"}
-        </p>
-
-        {rinExpanded && (
-          <div onClick={(e) => e.stopPropagation()}>
-            <div className="border-t border-[#EDE7D6] my-4" />
-
-            {/* Mini lifecycle stepper */}
-            <div className="flex items-start w-full overflow-x-auto mb-4">
-              {RIN_STAGES.map((stage, i) => (
-                <div key={stage} className="flex items-center flex-1 min-w-0">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={[
-                        "w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold",
-                        i < currentIdx
-                          ? "bg-[#0D3B20] text-white"
-                          : i === currentIdx
-                          ? "bg-[#C9A84C] text-white"
-                          : "border-2 border-[#E0D9C6] bg-white",
-                      ].join(" ")}
-                    >
-                      {i < currentIdx ? "✓" : i === currentIdx ? stage[0].toUpperCase() : ""}
-                    </div>
-                    <span className="font-mono text-[8px] text-[#7A7A7A] mt-0.5 text-center leading-tight">
-                      {stage}
-                    </span>
-                  </div>
-                  {i < RIN_STAGES.length - 1 && (
-                    <div
-                      className={[
-                        "flex-1 h-[2px] mb-3",
-                        i < currentIdx ? "bg-[#0D3B20]" : "bg-[#E0D9C6]",
-                      ].join(" ")}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Details grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                  Opened
-                </p>
-                <p className="font-mono text-[12px] text-[#1A1A1A]">{MOCK_RIN.opened_at ?? "—"}</p>
-              </div>
-              <div>
-                <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                  Deployed
-                </p>
-                <p className="font-mono text-[12px] text-[#1A1A1A]">
-                  {MOCK_RIN.deployed_at ?? "—"}
-                </p>
-              </div>
-              <div>
-                <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                  Expected Return
-                </p>
-                <p className="font-mono text-[12px] text-[#1A1A1A]">
-                  {MOCK_RIN.expected_return ?? "—"}
-                </p>
-              </div>
-              <div>
-                <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                  Return Rate
-                </p>
-                <p className="font-mono text-[12px] text-[#1A1A1A]">{MOCK_RIN.return_rate}%</p>
-              </div>
-              {MOCK_RIN.asset_node && (
-                <div className="col-span-2">
-                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                    Asset Node
-                  </p>
-                  <p className="font-sans text-[13px] text-[#1A1A1A]">{MOCK_RIN.asset_node}</p>
-                </div>
-              )}
-              {MOCK_RIN.notes && (
-                <div className="col-span-2">
-                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
-                    Notes
-                  </p>
-                  <p className="font-sans text-[13px] text-[#4A4A4A]">{MOCK_RIN.notes}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Card>
-    </div>
+    <MemberHomeView
+      memberName={memberName}
+      memberJoined={memberJoined}
+      cell={cell}
+      rin={rin}
+      myContrib={myContrib}
+      myShare={myShare}
+      totalYield={totalYield}
+      myYieldShare={myYieldShare}
+      memberCount={memberCount}
+    />
   )
 }

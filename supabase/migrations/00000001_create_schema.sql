@@ -327,7 +327,18 @@ create policy "member: select own cell (expense_logs)"
   );
 
 -- -----------------------------------------------------------------------------
--- 5. SEED DATA
+-- 5. GET_CELL_RAISED RPC (SECURITY DEFINER so members can call it)
+-- -----------------------------------------------------------------------------
+
+create or replace function get_cell_raised(p_cell_id uuid)
+  returns numeric language sql security definer stable as $$
+    select coalesce(sum(amount), 0)
+    from contributions
+    where cell_id = p_cell_id and status = 'confirmed';
+$$;
+
+-- -----------------------------------------------------------------------------
+-- 6. SEED DATA
 -- UUID convention:
 --   cells:        a0000000-0000-0000-0000-00000000000N
 --   members:      b0000000-0000-0000-0000-00000000000N (01–11)

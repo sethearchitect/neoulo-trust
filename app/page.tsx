@@ -5,17 +5,17 @@ export default async function Home() {
   const supabase = await createClient()
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!session) {
+  if (!user) {
     redirect("/auth/login")
   }
 
   const { data: member } = await supabase
     .from("members")
     .select("role")
-    .eq("user_id", session.user.id)
+    .eq("user_id", user.id)
     .single()
 
   if (!member) {

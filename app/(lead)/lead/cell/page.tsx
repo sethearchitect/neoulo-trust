@@ -1,81 +1,78 @@
-"use client"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase-server"
+import { LeadCellView } from "./LeadCellView"
+import type { Cell, MemberWithTotal, RINWithRaised } from "@/types"
 
-import { Card } from "@/components/ui/Card"
-import { StatCard } from "@/components/ui/StatCard"
-import { ProgressBar } from "@/components/ui/ProgressBar"
-import { Avatar } from "@/components/ui/Avatar"
-import { Badge } from "@/components/ui/Badge"
-import { MEMBERS, MOCK_CELL, MOCK_RIN } from "@/lib/mock-data"
-import { fmt, pct } from "@/lib/utils"
+export default async function LeadCellPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
 
-const alphaMembers = MEMBERS.filter((m) => m.cell_id === MOCK_CELL.id)
+  const { data: currentMember } = await supabase
+    .from("members")
+    .select("id, name, cell_id, role")
+    .eq("user_id", user.id)
+    .single()
 
-export default function LeadCellPage() {
-  return (
-    <div className="fu">
-      {/* Header */}
-      <div className="mb-7">
-        <h1 className="font-serif text-[28px] text-[#0D3B20] leading-tight">My Cell</h1>
-        <p className="font-mono text-[12px] text-[#7A7A7A] mt-1">
-          {MOCK_CELL.name} · {MOCK_CELL.location}, {MOCK_CELL.state}
-        </p>
-      </div>
+  if (!currentMember) redirect("/auth/login")
+  const cellId = (currentMember as { cell_id: string }).cell_id
 
-      {/* Stat row */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <StatCard label="Members" value={alphaMembers.length} sub="6 active" />
-        <StatCard label="Total Raised" value={fmt(MOCK_RIN.raised)} sub="of target" accent />
-        <StatCard label="RIN Target" value={fmt(MOCK_RIN.target)} sub={MOCK_RIN.rin_code} />
-      </div>
+  const [cellResult, rinResult, membersResult, contribResult] = await Promise.all([
+    supabase.from("cells").select("*").eq("id", cellId).single(),
+    supabase.from("rins").select("*").eq("cell_id", cellId).maybeSingle(),
+    supabase.from("members").select("*").eq("cell_id", cellId),
+    supabase.from("contributions").select("member_id, amount").eq("cell_id", cellId).eq("status", "confirmed"),
+  ])
 
-      {/* RIN progress card */}
-      <Card className="p-5 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-[13px] text-[#C9A84C] font-bold">{MOCK_RIN.rin_code}</span>
-          <Badge status={MOCK_RIN.status} />
-        </div>
-        <ProgressBar value={MOCK_RIN.raised} max={MOCK_RIN.target} color="#C9A84C" height={10} />
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-mono text-[11px] text-[#7A7A7A]">{fmt(MOCK_RIN.raised)} raised</span>
-          <span className="font-mono text-[11px] text-[#7A7A7A]">
-            {pct(MOCK_RIN.raised, MOCK_RIN.target)}%
-          </span>
-        </div>
-      </Card>
+  const cell = cellResult.data as unknown as Cell
+  const rinRaw = rinResult.data as unknown as {
+    id: string; cell_id: string; rin_code: string; target: number; status: string
+    return_rate: number; asset_node: string | null; notes: string | null
+    opened_at: string | null; deployed_at: string | null; expected_return: string | null
+  } | null
 
-      {/* Member roster */}
-      <h2 className="font-serif text-[18px] text-[#0D3B20] mb-3">Member Roster</h2>
-      <div className="flex flex-col gap-2">
-        {alphaMembers.map((m) => (
-          <Card key={m.id} className="p-4">
-            <div className="flex items-center gap-3">
-              <Avatar
-                name={m.name}
-                size={36}
-                color={m.role === "lead" ? "#C9A84C" : "#0D3B20"}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-sans text-[14px] font-semibold text-[#1A1A1A]">
-                    {m.name}
-                  </span>
-                  {m.role === "lead" && (
-                    <span className="font-mono text-[9px] text-[#C9A84C] uppercase tracking-widest">
-                      LEAD
-                    </span>
-                  )}
-                </div>
-                {m.profession && (
-                  <p className="font-sans text-[12px] text-[#7A7A7A]">{m.profession}</p>
-                )}
-              </div>
-              <span className="font-mono text-[13px] text-[#C9A84C] font-bold whitespace-nowrap">
-                {m.contribution_total !== null ? fmt(m.contribution_total) : "—"}
-              </span>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  )
+  const membersRaw = (membersResult.data ?? []) as unknown as Array<{
+    id: string; cell_id: string; name: string; role: string
+    profession: string | null; phone: string | null; email: string | null; joined: string | null
+  }>
+  const contribs = (contribResult.data ?? []) as unknown as Array<{ member_id: string; amount: number }>
+
+  // Build total per member
+  const totalByMember: Record<string, number> = {}
+  for (const c of contribs) {
+    totalByMember[c.member_id] = (totalByMember[c.member_id] ?? 0) + c.amount
+  }
+
+  const raised = Object.values(totalByMember).reduce((s, v) => s + v, 0)
+
+  const rin: RINWithRaised | null = rinRaw
+    ? {
+        id: rinRaw.id,
+        cell_id: rinRaw.cell_id,
+        rin_code: rinRaw.rin_code,
+        target: rinRaw.target,
+        status: rinRaw.status as RINWithRaised["status"],
+        return_rate: rinRaw.return_rate,
+        asset_node: rinRaw.asset_node ?? undefined,
+        notes: rinRaw.notes ?? undefined,
+        opened_at: rinRaw.opened_at ?? undefined,
+        deployed_at: rinRaw.deployed_at ?? undefined,
+        expected_return: rinRaw.expected_return ?? undefined,
+        raised,
+      }
+    : null
+
+  const members: MemberWithTotal[] = membersRaw.map((m) => ({
+    id: m.id,
+    cell_id: m.cell_id,
+    name: m.name,
+    role: m.role as "lead" | "member",
+    profession: m.profession ?? undefined,
+    phone: m.phone ?? undefined,
+    email: m.email ?? undefined,
+    joined: m.joined ?? undefined,
+    contribution_total: totalByMember[m.id] ?? null,
+  }))
+
+  return <LeadCellView cell={cell} rin={rin} members={members} />
 }

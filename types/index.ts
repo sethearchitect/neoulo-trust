@@ -110,3 +110,6 @@ export interface ExpenseLog {
   vendor?: string
   receipt_no?: string
 }
+
+export type MemberWithTotal = Member & { contribution_total: number | null }
+export type RINWithRaised = RIN & { raised: number }
