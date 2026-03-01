@@ -1,4 +1,4 @@
-import type { Cell, Member, RIN, Farm, CropCycle, YieldLog, ExpenseLog } from "@/types"
+import type { Cell, Member, RIN, Farm, CropCycle, YieldLog, ExpenseLog, Contribution } from "@/types"
 
 // ─── Cells ────────────────────────────────────────────────────────────────────
 
@@ -313,3 +313,36 @@ export const GROWTH_DATA = [
 export const TOTAL_DEPLOYED = 1500000
 export const TOTAL_YIELD = 550000
 export const TOTAL_FAMILIES = 11
+
+// ─── Individual Contributions (Alpha cell) ─────────────────────────────────
+
+export const CONTRIBUTIONS: Contribution[] = [
+  // Emeka Okafor (lead) ₦350,000
+  { id: "f000-001", member_id: "b0000000-0000-0000-0000-000000000001", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 150000, date: "2025-08-20", method: "Bank Transfer", reference: "TXN-A001", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-002", member_id: "b0000000-0000-0000-0000-000000000001", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 150000, date: "2025-10-05", method: "Bank Transfer", reference: "TXN-A002", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-003", member_id: "b0000000-0000-0000-0000-000000000001", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 50000,  date: "2025-12-01", method: "Cash", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  // Ngozi Eze ₦250,000
+  { id: "f000-004", member_id: "b0000000-0000-0000-0000-000000000002", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-09-10", method: "Bank Transfer", reference: "TXN-B001", note: "September installment", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-005", member_id: "b0000000-0000-0000-0000-000000000002", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-10-15", method: "Cash", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-006", member_id: "b0000000-0000-0000-0000-000000000002", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 50000,  date: "2025-11-20", method: "USSD Transfer", reference: "TXN-B003", note: "Final payment", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  // Chidi Nwachukwu ₦300,000
+  { id: "f000-007", member_id: "b0000000-0000-0000-0000-000000000003", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 200000, date: "2025-09-15", method: "Bank Transfer", reference: "TXN-C001", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-008", member_id: "b0000000-0000-0000-0000-000000000003", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-11-08", method: "Mobile Money", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  // Adaeze Onwudiwe ₦200,000
+  { id: "f000-009", member_id: "b0000000-0000-0000-0000-000000000004", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-09-20", method: "Bank Transfer", reference: "TXN-D001", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-010", member_id: "b0000000-0000-0000-0000-000000000004", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-11-12", method: "Cash", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  // Ikenna Obi ₦250,000
+  { id: "f000-011", member_id: "b0000000-0000-0000-0000-000000000005", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 150000, date: "2025-09-25", method: "Bank Transfer", reference: "TXN-E001", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-012", member_id: "b0000000-0000-0000-0000-000000000005", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-11-18", method: "USSD Transfer", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  // Chioma Uche ₦150,000
+  { id: "f000-013", member_id: "b0000000-0000-0000-0000-000000000006", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 100000, date: "2025-10-01", method: "Bank Transfer", reference: "TXN-F001", status: "confirmed", confirmed_by: "Emeka Okafor" },
+  { id: "f000-014", member_id: "b0000000-0000-0000-0000-000000000006", cell_id: "a0000000-0000-0000-0000-000000000001", amount: 50000,  date: "2025-12-05", method: "Cash", status: "confirmed", confirmed_by: "Emeka Okafor" },
+]
+// Sum: 350,000 + 250,000 + 300,000 + 200,000 + 250,000 + 150,000 = ₦1,500,000
+
+// ─── Convenience aliases for portal pages ──────────────────────────────────
+
+export const MOCK_CELL   = CELLS[0]    // Umuahia Alpha
+export const MOCK_RIN    = RINS[0]     // RIN-2025-001 (deployed)
+export const MOCK_LEAD   = MEMBERS[0]  // Emeka Okafor
+export const MOCK_MEMBER = MEMBERS[1]  // Ngozi Eze (simulated logged-in member)
