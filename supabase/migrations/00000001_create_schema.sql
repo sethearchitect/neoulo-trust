@@ -149,48 +149,57 @@ alter table expense_logs enable row level security;
 
 -- ── cells ────────────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on cells" on cells;
 create policy "admin: all on cells"
   on cells for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (cells)" on cells;
 create policy "lead: all on own cell (cells)"
   on cells for all
   using (get_my_role() = 'lead' and id = get_my_cell_id())
   with check (get_my_role() = 'lead' and id = get_my_cell_id());
 
+drop policy if exists "member: select own cell (cells)" on cells;
 create policy "member: select own cell (cells)"
   on cells for select
   using (get_my_role() = 'member' and id = get_my_cell_id());
 
 -- ── members ──────────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on members" on members;
 create policy "admin: all on members"
   on members for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (members)" on members;
 create policy "lead: all on own cell (members)"
   on members for all
   using (get_my_role() = 'lead' and cell_id = get_my_cell_id())
   with check (get_my_role() = 'lead' and cell_id = get_my_cell_id());
 
+drop policy if exists "member: select own cell (members)" on members;
 create policy "member: select own cell (members)"
   on members for select
   using (get_my_role() = 'member' and cell_id = get_my_cell_id());
 
 -- ── rins ─────────────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on rins" on rins;
 create policy "admin: all on rins"
   on rins for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (rins)" on rins;
 create policy "lead: all on own cell (rins)"
   on rins for all
   using (get_my_role() = 'lead' and cell_id = get_my_cell_id())
   with check (get_my_role() = 'lead' and cell_id = get_my_cell_id());
 
+drop policy if exists "member: select own cell (rins)" on rins;
 create policy "member: select own cell (rins)"
   on rins for select
   using (get_my_role() = 'member' and cell_id = get_my_cell_id());
@@ -198,16 +207,19 @@ create policy "member: select own cell (rins)"
 -- ── contributions ─────────────────────────────────────────────────────────────
 -- Members can only see their OWN contribution rows (not other members' amounts)
 
+drop policy if exists "admin: all on contributions" on contributions;
 create policy "admin: all on contributions"
   on contributions for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (contributions)" on contributions;
 create policy "lead: all on own cell (contributions)"
   on contributions for all
   using (get_my_role() = 'lead' and cell_id = get_my_cell_id())
   with check (get_my_role() = 'lead' and cell_id = get_my_cell_id());
 
+drop policy if exists "member: select own contributions only" on contributions;
 create policy "member: select own contributions only"
   on contributions for select
   using (
@@ -219,27 +231,32 @@ create policy "member: select own contributions only"
 
 -- ── farms ─────────────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on farms" on farms;
 create policy "admin: all on farms"
   on farms for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (farms)" on farms;
 create policy "lead: all on own cell (farms)"
   on farms for all
   using (get_my_role() = 'lead' and cell_id = get_my_cell_id())
   with check (get_my_role() = 'lead' and cell_id = get_my_cell_id());
 
+drop policy if exists "member: select own cell (farms)" on farms;
 create policy "member: select own cell (farms)"
   on farms for select
   using (get_my_role() = 'member' and cell_id = get_my_cell_id());
 
 -- ── crop_cycles ───────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on crop_cycles" on crop_cycles;
 create policy "admin: all on crop_cycles"
   on crop_cycles for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (crop_cycles)" on crop_cycles;
 create policy "lead: all on own cell (crop_cycles)"
   on crop_cycles for all
   using (
@@ -251,6 +268,7 @@ create policy "lead: all on own cell (crop_cycles)"
     and farm_id in (select id from farms where cell_id = get_my_cell_id())
   );
 
+drop policy if exists "member: select own cell (crop_cycles)" on crop_cycles;
 create policy "member: select own cell (crop_cycles)"
   on crop_cycles for select
   using (
@@ -260,11 +278,13 @@ create policy "member: select own cell (crop_cycles)"
 
 -- ── yield_logs ────────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on yield_logs" on yield_logs;
 create policy "admin: all on yield_logs"
   on yield_logs for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (yield_logs)" on yield_logs;
 create policy "lead: all on own cell (yield_logs)"
   on yield_logs for all
   using (
@@ -282,6 +302,7 @@ create policy "lead: all on own cell (yield_logs)"
     )
   );
 
+drop policy if exists "member: select own cell (yield_logs)" on yield_logs;
 create policy "member: select own cell (yield_logs)"
   on yield_logs for select
   using (
@@ -294,11 +315,13 @@ create policy "member: select own cell (yield_logs)"
 
 -- ── expense_logs ──────────────────────────────────────────────────────────────
 
+drop policy if exists "admin: all on expense_logs" on expense_logs;
 create policy "admin: all on expense_logs"
   on expense_logs for all
   using (get_my_role() = 'neoulo_admin')
   with check (get_my_role() = 'neoulo_admin');
 
+drop policy if exists "lead: all on own cell (expense_logs)" on expense_logs;
 create policy "lead: all on own cell (expense_logs)"
   on expense_logs for all
   using (
@@ -316,6 +339,7 @@ create policy "lead: all on own cell (expense_logs)"
     )
   );
 
+drop policy if exists "member: select own cell (expense_logs)" on expense_logs;
 create policy "member: select own cell (expense_logs)"
   on expense_logs for select
   using (
@@ -355,7 +379,8 @@ $$;
 insert into cells (id, name, location, state, formed, status) values
   ('a0000000-0000-0000-0000-000000000001', 'Umuahia Alpha Cell', 'Umuahia North', 'Abia',  'Aug 2025', 'active'),
   ('a0000000-0000-0000-0000-000000000002', 'Aba Beta Cell',      'Aba South',     'Abia',  'Sep 2025', 'forming'),
-  ('a0000000-0000-0000-0000-000000000003', 'Enugu Gamma Cell',   'Enugu North',   'Enugu', 'Nov 2025', 'forming');
+  ('a0000000-0000-0000-0000-000000000003', 'Enugu Gamma Cell',   'Enugu North',   'Enugu', 'Nov 2025', 'forming')
+on conflict do nothing;
 
 -- ── Members ───────────────────────────────────────────────────────────────────
 -- Cell 1: Umuahia Alpha — 6 members (lead + 5)
@@ -366,20 +391,23 @@ insert into members (id, cell_id, user_id, name, role, profession, phone, email,
   ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000001', null, 'Chidi Nwachukwu',  'member', 'Teacher',            '08031234569', 'chidi@example.com',  'Aug 2025'),
   ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000001', null, 'Adaeze Onwudiwe',  'member', 'Nurse',              '08031234570', 'adaeze@example.com', 'Aug 2025'),
   ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000001', null, 'Ikenna Obi',       'member', 'Trader',             '08031234571', 'ikenna@example.com', 'Aug 2025'),
-  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', null, 'Chioma Uche',      'member', 'Seamstress',         '08031234572', 'chioma@example.com', 'Aug 2025');
+  ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001', null, 'Chioma Uche',      'member', 'Seamstress',         '08031234572', 'chioma@example.com', 'Aug 2025')
+on conflict do nothing;
 
 -- Cell 2: Aba Beta — 3 members (lead + 2)
 
 insert into members (id, cell_id, user_id, name, role, profession, phone, email, joined) values
   ('b0000000-0000-0000-0000-000000000007', 'a0000000-0000-0000-0000-000000000002', null, 'Obinna Kalu',      'lead',   'Farmer',             '08051234567', 'obinna@example.com', 'Sep 2025'),
   ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000002', null, 'Amarachi Osuji',   'member', 'Market Trader',      '08051234568', 'amara@example.com',  'Sep 2025'),
-  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000002', null, 'Kelechi Mba',      'member', 'Artisan',            '08051234569', 'kelechi@example.com','Sep 2025');
+  ('b0000000-0000-0000-0000-000000000009', 'a0000000-0000-0000-0000-000000000002', null, 'Kelechi Mba',      'member', 'Artisan',            '08051234569', 'kelechi@example.com','Sep 2025')
+on conflict do nothing;
 
 -- Cell 3: Enugu Gamma — 2 members (lead + 1)
 
 insert into members (id, cell_id, user_id, name, role, profession, phone, email, joined) values
   ('b0000000-0000-0000-0000-000000000010', 'a0000000-0000-0000-0000-000000000003', null, 'Chukwuemeka Ani',  'lead',   'Engineer',           '07011234567', 'chuks@example.com',  'Nov 2025'),
-  ('b0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000003', null, 'Nneka Igwe',       'member', 'Pharmacist',         '07011234568', 'nneka@example.com',  'Nov 2025');
+  ('b0000000-0000-0000-0000-000000000011', 'a0000000-0000-0000-0000-000000000003', null, 'Nneka Igwe',       'member', 'Pharmacist',         '07011234568', 'nneka@example.com',  'Nov 2025')
+on conflict do nothing;
 
 -- ── RINs ──────────────────────────────────────────────────────────────────────
 
@@ -422,7 +450,8 @@ insert into rins (id, cell_id, rin_code, target, status, return_rate, asset_node
     '2025-11-20',
     null,
     null
-  );
+  )
+on conflict do nothing;
 
 -- ── Farm (Alpha cell only) ────────────────────────────────────────────────────
 
@@ -433,7 +462,8 @@ insert into farms (id, cell_id, crop, plot_size, irrigation_type) values
     'Tomatoes',
     '1 acre',
     'Drip Irrigation'
-  );
+  )
+on conflict do nothing;
 
 -- ── Crop Cycle ────────────────────────────────────────────────────────────────
 
@@ -444,7 +474,8 @@ insert into crop_cycles (id, farm_id, season, planted_at, status) values
     'Dry Season 2025',
     '2025-09-05',
     'harvested'
-  );
+  )
+on conflict do nothing;
 
 -- ── Yield Logs ────────────────────────────────────────────────────────────────
 
@@ -468,7 +499,8 @@ insert into yield_logs (id, cycle_id, date, quantity, value, market_price, buyer
     '₦500/kg',
     'Umuahia Main Market',
     'Final harvest — bumper yield, stored 2 days before sale.'
-  );
+  )
+on conflict do nothing;
 
 -- ── Expense Logs ──────────────────────────────────────────────────────────────
 
@@ -508,7 +540,8 @@ insert into expense_logs (id, cycle_id, date, item, amount, vendor, receipt_no) 
     44000,
     null,
     null
-  );
+  )
+on conflict do nothing;
 
 -- ── Contributions (Alpha cell — 11 entries totalling ₦1,500,000) ──────────────
 
@@ -584,7 +617,8 @@ insert into contributions (id, member_id, cell_id, amount, date, method, referen
     'b0000000-0000-0000-0000-000000000006',
     'a0000000-0000-0000-0000-000000000001',
     150000, '2025-10-20', 'Cash', null, 'confirmed', 'Emeka Okafor'
-  );
+  )
+on conflict do nothing;
 
 -- =============================================================================
 -- Verification queries (run manually in SQL editor after applying):
