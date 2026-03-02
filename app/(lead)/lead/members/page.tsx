@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase-server"
 import { LeadMembersView } from "./LeadMembersView"
-import type { MemberWithTotal } from "@/types"
+import type { MemberWithTotal, Contribution } from "@/types"
 
 export default async function LeadMembersPage() {
   const supabase = await createClient()
@@ -20,7 +20,7 @@ export default async function LeadMembersPage() {
   const [cellResult, membersResult, contribResult] = await Promise.all([
     supabase.from("cells").select("name").eq("id", cellId).single(),
     supabase.from("members").select("*").eq("cell_id", cellId),
-    supabase.from("contributions").select("member_id, amount").eq("cell_id", cellId).eq("status", "confirmed"),
+    supabase.from("contributions").select("*").eq("cell_id", cellId),
   ])
 
   const cellName = (cellResult.data as { name: string } | null)?.name ?? "—"
@@ -28,12 +28,24 @@ export default async function LeadMembersPage() {
     id: string; cell_id: string; name: string; role: string
     profession: string | null; phone: string | null; email: string | null; joined: string | null
   }>
-  const contribs = (contribResult.data ?? []) as unknown as Array<{ member_id: string; amount: number }>
+  const contribsAll = (contribResult.data ?? []) as unknown as Contribution[]
 
-  // Build total per member
+  // Build total per member (confirmed only)
   const totalByMember: Record<string, number> = {}
-  for (const c of contribs) {
-    totalByMember[c.member_id] = (totalByMember[c.member_id] ?? 0) + c.amount
+  for (const c of contribsAll) {
+    if (c.status === "confirmed") {
+      totalByMember[c.member_id] = (totalByMember[c.member_id] ?? 0) + c.amount
+    }
+  }
+
+  // Build full contribution history per member (newest first)
+  const contribsByMember: Record<string, Contribution[]> = {}
+  for (const c of contribsAll) {
+    if (!contribsByMember[c.member_id]) contribsByMember[c.member_id] = []
+    contribsByMember[c.member_id].push(c)
+  }
+  for (const id of Object.keys(contribsByMember)) {
+    contribsByMember[id].sort((a, b) => b.date.localeCompare(a.date))
   }
 
   const members: MemberWithTotal[] = membersRaw.map((m) => ({
@@ -48,5 +60,5 @@ export default async function LeadMembersPage() {
     contribution_total: totalByMember[m.id] ?? null,
   }))
 
-  return <LeadMembersView cellName={cellName} members={members} />
+  return <LeadMembersView cellName={cellName} members={members} contribsByMember={contribsByMember} />
 }

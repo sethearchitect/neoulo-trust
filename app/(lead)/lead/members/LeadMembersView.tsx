@@ -8,14 +8,17 @@ import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import { logContribution } from "@/lib/actions"
 import { fmt } from "@/lib/utils"
-import type { MemberWithTotal, ContributionMethod } from "@/types"
+import type { MemberWithTotal, Contribution, ContributionMethod } from "@/types"
 
 type Props = {
   cellName: string
   members: MemberWithTotal[]
+  contribsByMember: Record<string, Contribution[]>
 }
 
-export function LeadMembersView({ cellName, members }: Props) {
+export function LeadMembersView({ cellName, members, contribsByMember }: Props) {
+  const [selectedMember, setSelectedMember] = useState<MemberWithTotal | null>(null)
+  const [expandedContrib, setExpandedContrib] = useState<number | null>(null)
   const [logTarget, setLogTarget] = useState<MemberWithTotal | null>(null)
   const [amount, setAmount] = useState("")
   const [date, setDate] = useState("")
@@ -33,6 +36,19 @@ export function LeadMembersView({ cellName, members }: Props) {
     setReference("")
     setNote("")
     setSubmitError(null)
+  }
+
+  function openDetail(m: MemberWithTotal) {
+    setSelectedMember(m)
+    setExpandedContrib(null)
+  }
+
+  function openLogForm(m: MemberWithTotal) {
+    setLogTarget(m)
+    setSelectedMember(null)
+    setExpandedContrib(null)
+    setSubmitted(false)
+    clearForm()
   }
 
   function handleSubmit() {
@@ -70,7 +86,7 @@ export function LeadMembersView({ cellName, members }: Props) {
       {/* Member list */}
       <div className="flex flex-col gap-3">
         {members.map((m) => (
-          <Card key={m.id} className="p-4">
+          <Card key={m.id} className="p-4 cursor-pointer hover:border-[#C9A84C] transition-colors" onClick={() => openDetail(m)}>
             <div className="flex items-center gap-3">
               <Avatar
                 name={m.name}
@@ -101,10 +117,9 @@ export function LeadMembersView({ cellName, members }: Props) {
                 </span>
                 <button
                   className="bg-[#0D3B20] text-white rounded-xl text-[11px] font-semibold px-3 py-1.5 font-sans"
-                  onClick={() => {
-                    setLogTarget(m)
-                    setSubmitted(false)
-                    clearForm()
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    openLogForm(m)
                   }}
                 >
                   Log
@@ -115,11 +130,148 @@ export function LeadMembersView({ cellName, members }: Props) {
         ))}
       </div>
 
+      {/* Member Detail Modal */}
+      <Modal
+        open={selectedMember !== null}
+        onClose={() => {
+          setSelectedMember(null)
+          setExpandedContrib(null)
+        }}
+        title={selectedMember?.name ?? ""}
+      >
+        {selectedMember && (() => {
+          const contribs = contribsByMember[selectedMember.id] ?? []
+          const total = contribs
+            .filter((c) => c.status === "confirmed")
+            .reduce((sum, c) => sum + c.amount, 0)
+
+          return (
+            <div className="flex flex-col gap-5">
+              {/* Avatar + name + profession */}
+              <div className="flex items-center gap-3">
+                <Avatar
+                  name={selectedMember.name}
+                  size={48}
+                  color={selectedMember.role === "lead" ? "#C9A84C" : "#0D3B20"}
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-sans text-[16px] font-semibold text-[#1A1A1A]">
+                      {selectedMember.name}
+                    </span>
+                    {selectedMember.role === "lead" && (
+                      <span className="font-mono text-[9px] text-[#C9A84C] bg-[#2E1F00] px-2 py-0.5 rounded-full uppercase tracking-widest">
+                        LEAD
+                      </span>
+                    )}
+                  </div>
+                  {selectedMember.profession && (
+                    <p className="font-sans text-[13px] text-[#7A7A7A]">{selectedMember.profession}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Phone</p>
+                  <p className="font-sans text-[13px] text-[#1A1A1A]">{selectedMember.phone ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Email</p>
+                  <p className="font-sans text-[13px] text-[#1A1A1A] truncate">{selectedMember.email ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Member Since</p>
+                  <p className="font-sans text-[13px] text-[#1A1A1A]">{selectedMember.joined ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Contributions</p>
+                  <p className="font-sans text-[13px] text-[#1A1A1A]">{contribs.length}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-[#EDE7D6]" />
+
+              {/* Contribution history header */}
+              <div className="flex items-center justify-between">
+                <span className="font-sans text-[13px] font-semibold text-[#1A1A1A]">Contribution History</span>
+                <button
+                  className="bg-[#0D3B20] text-white rounded-xl text-[11px] font-semibold px-3 py-1.5 font-sans"
+                  onClick={() => openLogForm(selectedMember)}
+                >
+                  Log Contribution
+                </button>
+              </div>
+
+              {/* Contribution rows */}
+              {contribs.length === 0 ? (
+                <p className="font-sans text-[13px] text-[#7A7A7A] text-center py-3">No contributions yet</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {contribs.map((c, i) => (
+                    <div key={c.id} className="border border-[#EDE7D6] rounded-xl overflow-hidden">
+                      <button
+                        className="w-full flex items-center justify-between px-4 py-3 text-left"
+                        onClick={() => setExpandedContrib(expandedContrib === i ? null : i)}
+                      >
+                        <div>
+                          <p className="font-sans text-[13px] text-[#1A1A1A]">{c.note || c.method}</p>
+                          <p className="font-mono text-[11px] text-[#7A7A7A]">{c.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="font-mono text-[13px] text-[#C9A84C] font-bold">+{fmt(c.amount)}</span>
+                          <svg
+                            className={`w-4 h-4 text-[#7A7A7A] transition-transform ${expandedContrib === i ? "rotate-180" : ""}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </button>
+                      {expandedContrib === i && (
+                        <div className="border-t border-[#EDE7D6] px-4 py-3 grid grid-cols-2 gap-3 bg-[#F5F0E8]">
+                          <div>
+                            <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Method</p>
+                            <p className="font-sans text-[12px] text-[#1A1A1A]">{c.method}</p>
+                          </div>
+                          <div>
+                            <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Reference</p>
+                            <p className="font-sans text-[12px] text-[#1A1A1A]">{c.reference ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Status</p>
+                            <p className="font-sans text-[12px] text-[#1A1A1A] capitalize">{c.status}</p>
+                          </div>
+                          <div>
+                            <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Confirmed By</p>
+                            <p className="font-sans text-[12px] text-[#1A1A1A]">{c.confirmed_by ?? "—"}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Total */}
+              <div className="border-t border-[#EDE7D6] pt-3 flex items-center justify-between">
+                <span className="font-sans text-[13px] font-semibold text-[#4A4A4A]">Total Confirmed</span>
+                <span className="font-mono text-[15px] text-[#C9A84C] font-bold">{fmt(total)}</span>
+              </div>
+            </div>
+          )
+        })()}
+      </Modal>
+
       {/* Log Contribution Modal */}
       <Modal
         open={logTarget !== null}
         onClose={() => {
           setLogTarget(null)
+          setSelectedMember(null)
           setSubmitted(false)
         }}
         title={
