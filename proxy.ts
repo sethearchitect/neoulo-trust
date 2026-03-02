@@ -44,8 +44,9 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Authenticated but on login page → redirect to root (page.tsx handles role routing)
-  if (isAuthRoute) {
+  // Authenticated but on auth route → redirect to root (page.tsx handles role routing)
+  // Exception: /auth/set-password must remain accessible while authenticated
+  if (isAuthRoute && pathname !== "/auth/set-password") {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     return NextResponse.redirect(url)

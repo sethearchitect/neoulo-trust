@@ -1,15 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const message = searchParams.get("message")
+  const urlError = searchParams.get("error")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -56,6 +60,18 @@ export default function LoginPage() {
           >
             Sign in to your account
           </h2>
+
+          {message === "account_activated" && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-[#2D7A4F]/10 text-[#2D7A4F] text-sm">
+              Your account is activated. Sign in to continue.
+            </div>
+          )}
+
+          {urlError === "invalid_invite" && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-[#8B2500]/10 text-[#8B2500] text-sm">
+              This invite link is invalid or has already been used.
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-[#8B2500]/10 text-[#8B2500] text-sm">
