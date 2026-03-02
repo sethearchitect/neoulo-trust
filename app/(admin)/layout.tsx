@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { signOut } from "@/lib/actions"
 
 const navLinks = [
   { href: "/admin/dashboard", label: "Dashboard" },
@@ -39,6 +40,16 @@ export default function AdminLayout({
               {link.label}
             </Link>
           ))}
+        </div>
+        <div className="ml-auto">
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="text-white/60 hover:text-white text-sm font-medium transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </nav>
 

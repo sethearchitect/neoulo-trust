@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { signOut } from "@/lib/actions"
 
 const navLinks = [
   { href: "/lead/cell", label: "My Cell" },
@@ -38,6 +39,16 @@ export default function LeadLayout({
               {link.label}
             </Link>
           ))}
+        </div>
+        <div className="ml-auto">
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="text-white/60 hover:text-white text-sm font-medium transition-colors"
+            >
+              Sign out
+            </button>
+          </form>
         </div>
       </nav>
 
