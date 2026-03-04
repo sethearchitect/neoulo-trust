@@ -52,7 +52,7 @@ export function MemberHomeView({
       </div>
 
       {/* Stat row */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard label="My Contribution" value={fmt(myContrib)} sub="total paid in" />
         <StatCard label="My Share" value={`${myShare}%`} sub="of total raised" accent />
         <StatCard label="Projected Return" value={fmt(myYieldShare)} sub="yield share" />
@@ -60,7 +60,7 @@ export function MemberHomeView({
 
       {/* Cell info card */}
       <Card className="p-4 mb-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <p className="font-sans text-[14px] font-semibold text-[#1A1A1A]">{cell.name}</p>
             <p className="font-sans text-[12px] text-[#7A7A7A] mt-0.5">
@@ -130,7 +130,7 @@ export function MemberHomeView({
               </div>
 
               {/* Details grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">
                     Opened

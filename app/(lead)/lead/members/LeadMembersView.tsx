@@ -267,7 +267,7 @@ export function LeadMembersView({ cellName, members, contribsByMember, joinReque
               </div>
 
               {/* Info grid */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Phone</p>
                   <p className="font-sans text-[13px] text-[#1A1A1A]">{selectedMember.phone ?? "—"}</p>
@@ -327,7 +327,7 @@ export function LeadMembersView({ cellName, members, contribsByMember, joinReque
                         </div>
                       </button>
                       {expandedContrib === i && (
-                        <div className="border-t border-[#EDE7D6] px-4 py-3 grid grid-cols-2 gap-3 bg-[#F5F0E8]">
+                        <div className="border-t border-[#EDE7D6] px-4 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-[#F5F0E8]">
                           <div>
                             <p className="font-mono text-[10px] text-[#7A7A7A] uppercase tracking-widest mb-0.5">Method</p>
                             <p className="font-sans text-[12px] text-[#1A1A1A]">{c.method}</p>

@@ -26,7 +26,7 @@ export function LeadCellView({ cell, rin, members }: Props) {
       </div>
 
       {/* Stat row */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <StatCard label="Members" value={members.length} sub={`${members.length} active`} />
         <StatCard
           label="Total Raised"

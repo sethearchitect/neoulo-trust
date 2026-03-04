@@ -197,6 +197,7 @@ export function DashboardView({ cells, rins, totalDeployed, totalYield, families
 
       {/* Capital Breakdown Modal */}
       <Modal open={capitalOpen} onClose={() => setCapitalOpen(false)} title="Capital Breakdown">
+        <div className="overflow-x-auto -mx-1">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#EDE7D6]">
@@ -234,6 +235,7 @@ export function DashboardView({ cells, rins, totalDeployed, totalYield, families
             </tr>
           </tbody>
         </table>
+        </div>
       </Modal>
 
       {/* Yield Forecast Modal */}

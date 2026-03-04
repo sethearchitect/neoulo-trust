@@ -38,7 +38,7 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#EDE7D6]">
+        <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-[#EDE7D6]">
           <h2 className="font-serif text-[18px] font-bold text-[#0D3B20]">{title}</h2>
           <button
             onClick={onClose}
@@ -50,7 +50,7 @@ export function Modal({ open, onClose, title, children, wide = false }: ModalPro
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto flex-1 p-[18px_22px_24px]">{children}</div>
+        <div className="overflow-y-auto flex-1 p-4 md:p-[18px_22px_24px]">{children}</div>
       </div>
     </div>
   )
