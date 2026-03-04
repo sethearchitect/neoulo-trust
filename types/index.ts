@@ -113,3 +113,31 @@ export interface ExpenseLog {
 
 export type MemberWithTotal = Member & { contribution_total: number | null }
 export type RINWithRaised = RIN & { raised: number }
+
+export interface Profile {
+  id: string
+  name: string
+  phone?: string
+  email?: string
+  profession?: string
+}
+
+export type CellRequestType = "join_cell" | "start_cell"
+export type CellRequestStatus = "pending" | "approved" | "rejected"
+
+export interface CellRequest {
+  id: string
+  user_id: string
+  type: CellRequestType
+  cell_id?: string
+  proposed_cell_name?: string
+  proposed_location?: string
+  proposed_state?: string
+  message?: string
+  status: CellRequestStatus
+  reviewed_by?: string
+  reviewed_at?: string
+  created_at: string
+}
+
+export type CellRequestWithProfile = CellRequest & { profile: Profile | null }

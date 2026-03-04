@@ -4,15 +4,17 @@ import { createServerClient } from "@supabase/ssr"
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const token_hash = searchParams.get("token_hash")
-  const type = searchParams.get("type") as "invite" | "email" | null
+  const type = searchParams.get("type") as "invite" | "email" | "signup" | null
 
   if (token_hash && type) {
-    // Build the success redirect first so we can attach cookies to it.
-    // We cannot use createClient() from supabase-server.ts here because that
-    // helper's setAll() silently swallows writes (designed for Server Components
-    // which are read-only). In a Route Handler we must write cookies directly
-    // onto the response object.
-    const response = NextResponse.redirect(`${origin}/auth/set-password`)
+    // For self-signup email confirmation, redirect to /onboarding after verify.
+    // For invite flow, redirect to /auth/set-password (existing behaviour).
+    const isInvite = type === "invite"
+    const successRedirect = isInvite
+      ? `${origin}/auth/set-password`
+      : `${origin}/onboarding`
+
+    const response = NextResponse.redirect(successRedirect)
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,15 +33,17 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { data, error } = await supabase.auth.verifyOtp({ token_hash, type })
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash, type: type === "signup" ? "email" : type })
 
     if (!error && data.user) {
-      // Link member record if not yet linked
-      await supabase
-        .from("members")
-        .update({ user_id: data.user.id })
-        .eq("email", data.user.email!)
-        .is("user_id", null)
+      if (isInvite) {
+        // Link member record if not yet linked (invite flow only)
+        await supabase
+          .from("members")
+          .update({ user_id: data.user.id })
+          .eq("email", data.user.email!)
+          .is("user_id", null)
+      }
 
       return response
     }

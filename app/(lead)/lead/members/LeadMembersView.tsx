@@ -6,17 +6,18 @@ import { Avatar } from "@/components/ui/Avatar"
 import { Modal } from "@/components/ui/Modal"
 import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
-import { logContribution } from "@/lib/actions"
+import { logContribution, approveJoinRequest, rejectJoinRequest } from "@/lib/actions"
 import { fmt } from "@/lib/utils"
-import type { MemberWithTotal, Contribution, ContributionMethod } from "@/types"
+import type { MemberWithTotal, Contribution, ContributionMethod, CellRequestWithProfile } from "@/types"
 
 type Props = {
   cellName: string
   members: MemberWithTotal[]
   contribsByMember: Record<string, Contribution[]>
+  joinRequests: CellRequestWithProfile[]
 }
 
-export function LeadMembersView({ cellName, members, contribsByMember }: Props) {
+export function LeadMembersView({ cellName, members, contribsByMember, joinRequests }: Props) {
   const [selectedMember, setSelectedMember] = useState<MemberWithTotal | null>(null)
   const [expandedContrib, setExpandedContrib] = useState<number | null>(null)
   const [logTarget, setLogTarget] = useState<MemberWithTotal | null>(null)
@@ -28,6 +29,8 @@ export function LeadMembersView({ cellName, members, contribsByMember }: Props) 
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [requestActionError, setRequestActionError] = useState<string | null>(null)
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null)
 
   function clearForm() {
     setAmount("")
@@ -49,6 +52,26 @@ export function LeadMembersView({ cellName, members, contribsByMember }: Props) 
     setExpandedContrib(null)
     setSubmitted(false)
     clearForm()
+  }
+
+  function handleApproveRequest(requestId: string) {
+    setRequestActionError(null)
+    setProcessingRequestId(requestId)
+    startTransition(async () => {
+      const result = await approveJoinRequest(requestId)
+      if (result.error) setRequestActionError(result.error)
+      setProcessingRequestId(null)
+    })
+  }
+
+  function handleRejectRequest(requestId: string) {
+    setRequestActionError(null)
+    setProcessingRequestId(requestId)
+    startTransition(async () => {
+      const result = await rejectJoinRequest(requestId)
+      if (result.error) setRequestActionError(result.error)
+      setProcessingRequestId(null)
+    })
   }
 
   function handleSubmit() {
@@ -82,6 +105,78 @@ export function LeadMembersView({ cellName, members, contribsByMember }: Props) 
           {cellName} · {members.length} members
         </p>
       </div>
+
+      {/* Join Requests */}
+      {joinRequests.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <p className="font-mono text-[10px] text-[#C9A84C] uppercase tracking-widest">
+              Join Requests
+            </p>
+            <span className="font-mono text-[10px] bg-[#2E1F00] text-[#FFD06A] px-2 py-0.5 rounded-full">
+              {joinRequests.length} pending
+            </span>
+          </div>
+          {requestActionError && (
+            <p className="font-sans text-[13px] text-[#8B2500] mb-3">{requestActionError}</p>
+          )}
+          <div className="flex flex-col gap-3">
+            {joinRequests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white rounded-2xl border border-[#C9A84C]/40 px-5 py-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar
+                      name={req.profile?.name ?? "?"}
+                      size={36}
+                      color="#C9A84C"
+                    />
+                    <div>
+                      <p className="font-sans text-[14px] font-semibold text-[#1A1A1A]">
+                        {req.profile?.name ?? "Unknown"}
+                      </p>
+                      {req.profile?.profession && (
+                        <p className="font-sans text-[12px] text-[#7A7A7A]">{req.profile.profession}</p>
+                      )}
+                      {req.profile?.phone && (
+                        <p className="font-mono text-[12px] text-[#7A7A7A]">{req.profile.phone}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleRejectRequest(req.id)}
+                      disabled={processingRequestId === req.id}
+                      className="bg-[#EDE7D6] text-[#8B2500] rounded-xl text-[11px] font-semibold px-3 py-1.5 font-sans disabled:opacity-50 hover:bg-[#E0D9C6] transition-colors"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      onClick={() => handleApproveRequest(req.id)}
+                      disabled={processingRequestId === req.id}
+                      className="bg-[#0D3B20] text-white rounded-xl text-[11px] font-semibold px-3 py-1.5 font-sans disabled:opacity-50 hover:opacity-90 transition-opacity"
+                    >
+                      {processingRequestId === req.id ? "…" : "Approve"}
+                    </button>
+                  </div>
+                </div>
+                {req.message && (
+                  <p className="font-sans text-[12px] text-[#4A4A4A] mt-3 pl-12 italic">
+                    "{req.message}"
+                  </p>
+                )}
+                <p className="font-mono text-[10px] text-[#7A7A7A] mt-2 pl-12">
+                  Requested {new Date(req.created_at).toLocaleDateString("en-GB", {
+                    day: "numeric", month: "short", year: "numeric",
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Member list */}
       <div className="flex flex-col gap-3">

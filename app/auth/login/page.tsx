@@ -129,7 +129,10 @@ function LoginContent() {
         </div>
 
         <p className="text-center text-xs text-[#7A7A7A] mt-6">
-          Access is by invitation only. Contact your cell lead if you need help.
+          New to Neoulo Trust?{" "}
+          <a href="/auth/signup" className="text-[#0D3B20] font-semibold hover:underline">
+            Create an account
+          </a>
         </p>
       </div>
     </div>

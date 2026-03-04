@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase-server"
 import { LeadMembersView } from "./LeadMembersView"
-import type { MemberWithTotal, Contribution } from "@/types"
+import type { MemberWithTotal, Contribution, CellRequestWithProfile } from "@/types"
 
 export default async function LeadMembersPage() {
   const supabase = await createClient()
@@ -17,10 +17,17 @@ export default async function LeadMembersPage() {
   if (!currentMember) redirect("/auth/login")
   const cellId = (currentMember as { cell_id: string }).cell_id
 
-  const [cellResult, membersResult, contribResult] = await Promise.all([
+  const [cellResult, membersResult, contribResult, requestsResult] = await Promise.all([
     supabase.from("cells").select("name").eq("id", cellId).single(),
     supabase.from("members").select("*").eq("cell_id", cellId),
     supabase.from("contributions").select("*").eq("cell_id", cellId),
+    supabase
+      .from("cell_requests")
+      .select("*")
+      .eq("cell_id", cellId)
+      .eq("type", "join_cell")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true }),
   ])
 
   const cellName = (cellResult.data as { name: string } | null)?.name ?? "—"
@@ -29,6 +36,41 @@ export default async function LeadMembersPage() {
     profession: string | null; phone: string | null; email: string | null; joined: string | null
   }>
   const contribsAll = (contribResult.data ?? []) as unknown as Contribution[]
+  const requestsRaw = (requestsResult.data ?? []) as unknown as Array<{
+    id: string; user_id: string; type: string; cell_id: string | null; message: string | null; status: string; created_at: string
+  }>
+
+  // Enrich join requests with profile data
+  const requesterIds = requestsRaw.map((r) => r.user_id)
+  let profilesMap: Record<string, { name: string; phone: string | null; email: string | null; profession: string | null }> = {}
+  if (requesterIds.length > 0) {
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, name, phone, email, profession")
+      .in("id", requesterIds)
+    for (const p of (profilesData ?? []) as Array<{ id: string; name: string; phone: string | null; email: string | null; profession: string | null }>) {
+      profilesMap[p.id] = p
+    }
+  }
+
+  const joinRequests: CellRequestWithProfile[] = requestsRaw.map((r) => ({
+    id: r.id,
+    user_id: r.user_id,
+    type: "join_cell" as const,
+    cell_id: r.cell_id ?? undefined,
+    message: r.message ?? undefined,
+    status: r.status as "pending",
+    created_at: r.created_at,
+    profile: profilesMap[r.user_id]
+      ? {
+          id: r.user_id,
+          name: profilesMap[r.user_id].name,
+          phone: profilesMap[r.user_id].phone ?? undefined,
+          email: profilesMap[r.user_id].email ?? undefined,
+          profession: profilesMap[r.user_id].profession ?? undefined,
+        }
+      : null,
+  }))
 
   // Build total per member (confirmed only)
   const totalByMember: Record<string, number> = {}
@@ -60,5 +102,12 @@ export default async function LeadMembersPage() {
     contribution_total: totalByMember[m.id] ?? null,
   }))
 
-  return <LeadMembersView cellName={cellName} members={members} contribsByMember={contribsByMember} />
+  return (
+    <LeadMembersView
+      cellName={cellName}
+      members={members}
+      contribsByMember={contribsByMember}
+      joinRequests={joinRequests}
+    />
+  )
 }

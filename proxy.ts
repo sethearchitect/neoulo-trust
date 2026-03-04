@@ -33,6 +33,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isAuthRoute = pathname.startsWith("/auth")
+  const isOnboardingRoute = pathname.startsWith("/onboarding")
 
   // Not authenticated
   if (!user) {
@@ -45,11 +46,16 @@ export async function proxy(request: NextRequest) {
   }
 
   // Authenticated but on auth route → redirect to root (page.tsx handles role routing)
-  // Exception: /auth/set-password must remain accessible while authenticated
+  // Exceptions: /auth/set-password must remain accessible while authenticated
   if (isAuthRoute && pathname !== "/auth/set-password") {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     return NextResponse.redirect(url)
+  }
+
+  // /onboarding is protected (requires auth) but has no role gating
+  if (isOnboardingRoute) {
+    return supabaseResponse
   }
 
   // Role-based route gating

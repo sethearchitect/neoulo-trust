@@ -18,17 +18,25 @@ export default async function Home() {
     .eq("user_id", user.id)
     .single()
 
-  if (!member) {
-    // No member row — treat as admin (formalised later via get_my_role())
-    redirect("/admin/dashboard")
-  }
-
-  if (member.role === "lead") {
+  if (member?.role === "lead") {
     redirect("/lead/cell")
   }
 
-  if (member.role === "member") {
+  if (member?.role === "member") {
     redirect("/member/home")
+  }
+
+  // No members row — check if a profiles row exists
+  // profiles row → self-signed-up user awaiting cell assignment → /onboarding
+  // no profiles row → pre-seeded admin account → /admin/dashboard
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .single()
+
+  if (profile) {
+    redirect("/onboarding")
   }
 
   redirect("/admin/dashboard")
