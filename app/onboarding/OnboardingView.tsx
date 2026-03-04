@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useTransition, useState } from "react"
+import { useTransition, useState } from "react"
 import { useRouter } from "next/navigation"
-import { createProfile } from "@/lib/actions"
 import type { CellRequest, CellRequestStatus, Profile } from "@/types"
 
 const statusColors: Record<CellRequestStatus, { bg: string; text: string; label: string }> = {
@@ -22,35 +21,6 @@ export function OnboardingView({ profile, requests, cellNames, userEmail }: Prop
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-
-  // After email confirmation, sessionStorage may have pending profile data.
-  // Create the profile row if it doesn't exist yet.
-  useEffect(() => {
-    if (profile) return
-
-    const raw = sessionStorage.getItem("pending_profile")
-    if (!raw) return
-
-    let data: { name: string; phone: string; email: string; profession: string }
-    try { data = JSON.parse(raw) } catch { return }
-
-    sessionStorage.removeItem("pending_profile")
-
-    startTransition(async () => {
-      const result = await createProfile({
-        name: data.name,
-        phone: data.phone || undefined,
-        email: data.email || undefined,
-        profession: data.profession || undefined,
-      })
-      if (!result.error) {
-        router.refresh()
-      } else {
-        setError(result.error)
-      }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const hasPending = requests.some((r) => r.status === "pending")
 

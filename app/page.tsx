@@ -39,5 +39,19 @@ export default async function Home() {
     redirect("/onboarding")
   }
 
+  // No profiles row either — check if user_metadata has a name (self-signup flow).
+  // The signup form stores name/phone/profession in Supabase user_metadata so the data
+  // survives across tabs and email confirmation links.
+  if (user.user_metadata?.name) {
+    await supabase.from("profiles").insert({
+      id: user.id,
+      name: user.user_metadata.name as string,
+      phone: (user.user_metadata.phone as string | null) ?? null,
+      email: user.email ?? null,
+      profession: (user.user_metadata.profession as string | null) ?? null,
+    })
+    redirect("/onboarding")
+  }
+
   redirect("/admin/dashboard")
 }

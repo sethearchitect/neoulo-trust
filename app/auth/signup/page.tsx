@@ -37,7 +37,7 @@ export default function SignUpPage() {
         email,
         password,
         options: {
-          data: { name },
+          data: { name, phone: phone || null, profession: profession || null },
           emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
       })
@@ -59,20 +59,9 @@ export default function SignUpPage() {
         return
       }
 
-      // Email confirmation required — create profile now (user is in limbo until confirmed)
-      // We can't call server action without a session, so we use the supabase client directly
-      if (data.user) {
-        // Profile will be created after email confirmation via the confirm route
-        // Store the profile info in localStorage temporarily so the confirm handler can use it
-        // Actually: create via direct insert with anon key — will work if RLS allows own row
-        // But we have no session yet. So we store in sessionStorage and create after login.
-        // Simplest approach: show the "check email" screen and create on first /onboarding load.
-        // Store pending profile data in sessionStorage for pickup after confirmation.
-        sessionStorage.setItem(
-          "pending_profile",
-          JSON.stringify({ name, phone: phone || "", email, profession: profession || "" })
-        )
-      }
+      // Email confirmation required — profile data is stored in user_metadata server-side.
+      // app/page.tsx will auto-create the profiles row from metadata after the user confirms
+      // and signs in, so no client-side storage is needed here.
 
       setDone(true)
     })
